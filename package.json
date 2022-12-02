@@ -116,5 +116,18 @@
     "xml2js": "^0.4.23",
     "minimist": ">= 1.2.6"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/skrazi/FHIR-Converter.git"
+  },
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/skrazi/FHIR-Converter/issues"
+  },
+  "homepage": "https://github.com/skrazi/FHIR-Converter#readme"
 }

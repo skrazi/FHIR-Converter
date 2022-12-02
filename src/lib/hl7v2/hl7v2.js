@@ -206,4 +206,85 @@ function parseInvalidAccess(parsedMsg) {
     return invalidAccesses;
 }
 
+function getMessageTypeFromMSH(msg) {
+    var segments = msg.split(/\r?\n/);
+    if (segments[0].substring(0, 3) !== "MSH") {
+        throw new Error("Invalid HL7 v2 message, first segment id = " + segments[0].substring(0, 3));
+    }
+
+    if (segments[0].length < 8) {
+        throw new Error("MSH segment missing separators!");
+    }
+
+    let separatorsStr = segments[0].substring(3, 8);
+    if (new Set(separatorsStr).size !== separatorsStr.length) {
+        throw new Error(`Duplicate separators!`);
+    }
+
+    //Discover the separators for the segments.
+    var fieldSeparator = segments[0][3];
+    var componentSeparator = segments[0][4];
+    var repetitionSeparator = segments[0][5];
+    var escapeCharacter = segments[0][6];
+    var subcomponentSeparator = segments[0][7];
+
+    if (escapeCharacter != '\\') {
+        throw Error("Escape character is *not* backslash. This has not been tested!");
+    }
+
+    var msgType = '';
+    var msgSubType = '';
+    var fields = segments[0].split(fieldSeparator);
+    // console.log(segments[i])
+    if (fields[0].length) // Checking that it is not an empty line at the end of the file. 
+    {
+        var seg = CoverageArray.makeUndefinedAccessReporterArray(fields[0], 0);
+        for (var f = 1; f < fields.length; f++) {
+            if (f == 1) //First field of the MSH segment lists the separators
+            {
+                var separators = CoverageArray.makeCoverageArray();
+                separators.push([fields[f]]);
+                separators.accessed[0] = true;
+                seg.push(separators);
+            }
+            else {
+                if (fields[f].length == 0) //If the field is not present set null
+                {
+                    seg.push(null);
+                }
+                else {
+                    var ocomps = CoverageArray.makeCoverageArray();
+
+                    createComponents(ocomps,
+                        fields[f],
+                        fieldSeparator,
+                        componentSeparator,
+                        subcomponentSeparator,
+                        repetitionSeparator);
+
+                    var reps = fields[f].split(repetitionSeparator);
+                    for (var repId = 0; repId < reps.length; repId++) {
+                        let repIdArr = [];
+                        createComponents(repIdArr,
+                            reps[repId],
+                            fieldSeparator,
+                            componentSeparator,
+                            subcomponentSeparator,
+                            repetitionSeparator);
+                        ocomps.repeats.push(repIdArr);
+                    }
+
+                    seg.push(ocomps);
+                }
+            }
+        }
+        msgType = seg[7][0];
+        msgSubType = seg[7][1];
+    }
+    // }
+
+    return msgType + "_" + msgSubType;
+}
+
 module.exports.parseHL7v2 = parseHL7v2;
+module.exports.getMessageTypeFromMSH = getMessageTypeFromMSH;
